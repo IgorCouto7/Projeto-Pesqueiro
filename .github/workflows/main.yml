@@ -46,7 +46,7 @@ jobs:
      - name: Criar Pacote da Aplicação
        run: |
          mkdir app-dist
-         cp peixe.py cadastro.py tests_clientes.py tests_peixes.py notify.py app-dist/
+         cp cadastro.py main.py peixe.py requirements.txt test_cadastro_peixes_mock.py tests_clientes.py tests_peixes.py app-dist/
           tar -czf projeto-pesqueiro-app.tar.gz -C app-dist .
          echo "PACOTE_NOME=projeto-pesqueiro-app.tar.gz" >> $GITHUB_ENV
      - name: Armazenar Pacote Final (Artefato)
