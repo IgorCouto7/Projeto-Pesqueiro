@@ -45,7 +45,9 @@ jobs:
      # Comando de Empacotamento: Cria um pacote .tar.gz do projeto
      - name: Criar Pacote da Aplicação
        run: |
-         tar -czf projeto-pesqueiro-app.tar.gz --exclude=projeto-pesqueiro-app.tar.gz .
+         mkdir app-dist
+         cp peixe.py cadastro.py tests_clientes.py tests_peixes.py notify.py app-dist/
+          tar -czf projeto-pesqueiro-app.tar.gz -C app-dist .
          echo "PACOTE_NOME=projeto-pesqueiro-app.tar.gz" >> $GITHUB_ENV
      - name: Armazenar Pacote Final (Artefato)
        uses: actions/upload-artifact@v4
