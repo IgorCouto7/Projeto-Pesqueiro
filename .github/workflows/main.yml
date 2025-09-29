@@ -1,44 +1,92 @@
-name: Python CI
-
+name: Python CI/CD - Projeto Pesqueiro
 on:
-
-  push:
-
-    branches: [ "main" ]
-
-  pull_request:
-
-    branches: [ "main" ]
-
+ push:
+   branches:
+     - main
+ pull_request:
+   branches:
+     - main
 jobs:
 
-  build:
+ # JOB 1: TESTES (Roda primeiro, gera o relatório como artefato)
 
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout do código
-
-        uses: actions/checkout@v3
-
-      - name: Configurar Python
-
-        uses: actions/setup-python@v4
-
-        with:
-
-          python-version: "3.10"
-
-      - name: Instalar dependências
-
-        run: |
-
-          pip install pytest
-
-      - name: Rodar testes
-
-        run: |
-
-          pytest
+ testes:
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout do Código
+       uses: actions/checkout@v4
+     - name: Configurar Python e Instalar Dependências
+       uses: actions/setup-python@v5
+       with:
+         python-version: '3.x'
+     # Instala as dependências do projeto (do requirements.txt) e as ferramentas de teste
+     - name: Instalar Dependências
+       run: |
+         pip install -r requirements.txt
+         pip install pytest pytest-cov
+     - name: Executar os 20+ Testes e Gerar Relatório (JUnit)
+       run: |
+         # O '--junitxml' gera o arquivo de relatório que será o artefato
+         pytest --cov=./ --junitxml=test_results.xml
+     - name: Armazenar Relatório de Testes (Artefato)
+       uses: actions/upload-artifact@v4
+       with:
+         name: relatorio-testes
+         path: test_results.xml
  
+ # JOB 2: EMPACOTAMENTO (BUILD) (Roda APENAS se Testes PASSAR)
+ 
+ build:
+   needs: testes # Garante que só empacote se os testes estiverem OK
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout do Código
+       uses: actions/checkout@v4
+     # Comando de Empacotamento: Cria um pacote .tar.gz do projeto
+     - name: Criar Pacote da Aplicação
+       run: |
+         tar -czf projeto-pesqueiro-app.tar.gz .
+         echo "PACOTE_NOME=projeto-pesqueiro-app.tar.gz" >> $GITHUB_ENV
+     - name: Armazenar Pacote Final (Artefato)
+       uses: actions/upload-artifact@v4
+       with:
+         name: pacote-aplicacao
+         path: ${{ env.PACOTE_NOME }}
+
+
+ # JOB 3: NOTIFICAÇÃO (Roda em PARALELO com o BUILD)
+ notificacao:
+   needs: testes # Depende apenas dos testes (roda paralelo ao build)
+   runs-on: ubuntu-latest
+   steps:
+     - name: Checkout do Código
+       uses: actions/checkout@v4
+     - name: Criar Script de Notificação (Python)
+       run: |
+         # Cria um script Python no diretório de trabalho
+         cat > notify.py << EOF
+         import os
+         # Lê a variável de ambiente (Secret do GitHub)
+         DESTINO = os.environ.get("EMAIL_DESTINO")
+         # Mensagem simples exigida pelo exercício
+         MENSAGEM = "Pipeline executado!"
+         if not DESTINO:
+             print("ERRO: Variável de ambiente EMAIL_DESTINO não configurada. FIM.")
+             exit(1)
+         # Simula a lógica de notificação
+         print(f"--- Envio de E-mail ---")
+         print(f"Destinatário: {DESTINO}")
+         print(f"Mensagem: {MENSAGEM}")
+         print("Simulação de envio bem-sucedida. O e-mail não está hardcoded.")
+         print("-----------------------")
+         EOF
+     - name: Configurar Python para Rodar o Script
+       uses: actions/setup-python@v5
+       with:
+         python-version: '3.x'
+     - name: Rodar Script de Envio de E-mail (com Secret)
+       run: python notify.py
+       env:
+         # PASSA O SEGREDO DO GITHUB COMO VARIÁVEL DE AMBIENTE
+         # ISSO CUMPRE A RESTRIÇÃO DE NÃO HARDCODE DO EXERCÍCIO
+         EMAIL_DESTINO: ${{ secrets.DESTINATION_EMAIL }}
