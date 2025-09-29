@@ -23,7 +23,6 @@ jobs:
      - name: Instalar Dependências
        run: |
          pip install -r requirements.txt
-         pip install pytest pytest-cov
      - name: Executar os 20+ Testes e Gerar Relatório (JUnit)
        run: |
          # O '--junitxml' gera o arquivo de relatório que será o artefato
@@ -90,5 +89,4 @@ jobs:
        run: python notify.py
        env:
          # PASSA O SEGREDO DO GITHUB COMO VARIÁVEL DE AMBIENTE
-         # ISSO CUMPRE A RESTRIÇÃO DE NÃO HARDCODE DO EXERCÍCIO
          EMAIL_DESTINO: ${{ secrets.DESTINATION_EMAIL }}
